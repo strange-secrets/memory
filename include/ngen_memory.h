@@ -10,11 +10,11 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #if defined(_DEBUG)
-    #define NGEN_NEW(heap)                    new(heap)
-    #define NGEN_ALIGNED_NEW(heap, alignment) new(heap, alignment)
-#else
     #define NGEN_NEW(heap)                    new(heap, __FILE__, __LINE__)
     #define NGEN_ALIGNED_NEW(heap, alignment) new(heap, alignment, __FILE__, __LINE__)
+#else
+    #define NGEN_NEW(heap)                    new(heap)
+    #define NGEN_ALIGNED_NEW(heap, alignment) new(heap, alignment)
 #endif //defined(_DEBUG)
 
 
