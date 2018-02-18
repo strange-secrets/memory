@@ -55,7 +55,7 @@ namespace ngen {
             FreeBlock* findFreeBlock_first(size_t dataLength, size_t alignment) const;
             FreeBlock* findFreeBlock_smallest(size_t dataLength, size_t alignment) const;
 
-            Allocation* allocate(size_t dataLength, size_t alignment, const char *fileName, size_t line);
+            Allocation* allocate(size_t dataLength, size_t alignment, bool isArray, const char *fileName, size_t line);
 
         private:
             FreeBlock*  m_rootBlock;

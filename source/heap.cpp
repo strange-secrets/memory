@@ -68,7 +68,7 @@ namespace ngen {
         //!         Length (in bytes) of the memory block to be allocated.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alloc(size_t dataLength) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, nullptr, 0);
+            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, nullptr, 0);
             if (memory) {
 
             }
@@ -83,7 +83,7 @@ namespace ngen {
         //!         Specifies the alignment of the allocated memory block. Must be a power of two.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAlloc(size_t dataLength, size_t alignment) {
-            Allocation *memory = allocate(dataLength, alignment, nullptr, 0);
+            Allocation *memory = allocate(dataLength, alignment, false, nullptr, 0);
             if (memory) {
 
             }
@@ -100,7 +100,7 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alloc(size_t dataLength, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, fileName, line);
+            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, fileName, line);
             if (memory) {
 
             }
@@ -119,7 +119,7 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAlloc(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, alignment, fileName, line);
+            Allocation *memory = allocate(dataLength, alignment, false, fileName, line);
             if (memory) {
 
             }
@@ -132,9 +132,8 @@ namespace ngen {
         //!         Length (in bytes) of the memory block to be allocated.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::allocArray(size_t dataLength) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, nullptr, 0);
+            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, nullptr, 0);
             if (memory) {
-                memory->isArray = true;
             }
 
             return nullptr;
@@ -147,9 +146,8 @@ namespace ngen {
         //!         Specifies the alignment of the allocated memory block. Must be a power of two.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAllocArray(size_t dataLength, size_t alignment) {
-            Allocation *memory = allocate(dataLength, alignment, nullptr, 0);
+            Allocation *memory = allocate(dataLength, alignment, true, nullptr, 0);
             if (memory) {
-                memory->isArray = true;
             }
 
             return nullptr;
@@ -164,9 +162,8 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::allocArray(size_t dataLength, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, fileName, line);
+            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, fileName, line);
             if (memory) {
-                memory->isArray = true;
             }
 
             return nullptr;
@@ -183,9 +180,8 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAllocArray(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, alignment, fileName, line);
+            Allocation *memory = allocate(dataLength, alignment, true, fileName, line);
             if (memory) {
-                memory->isArray = true;
             }
 
             return nullptr;
@@ -194,10 +190,11 @@ namespace ngen {
         //! \brief Attempts to allocate a block of memory with a specified size and alignment.
         //! \param dataLength [in] - The length (in bytes) of the memory block to be allocated.
         //! \param alignment [in] - The alignment (in bytes) of the memory block to be allocated.
+        //! \param isArray [in] - True if the allocation is an array otherwise false.
         //! \param fileName [in] - The path of the source file that made the allocation, this may be null.
         //! \param line [in] - The line number within the source file where the allocation was requested.
         //! \returns Pointer to the allocated memory block or nullptr if the allocation could not be made.
-        Allocation* Heap::allocate(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
+        Allocation* Heap::allocate(size_t dataLength, size_t alignment, bool isArray, const char *fileName, size_t line) {
             // TODO: Validate that alignment is a power of 2.
 
             if (alignment <= MAXIMUM_ALIGNMENT) {
@@ -205,6 +202,7 @@ namespace ngen {
 
                 if (block) {
                     // TODO: Consume memory from block
+                    // TODO: allocation->isArray = isArray
                 }
             } else {
                 // TODO: Log WARN: Large alignment of {alignment} was requested.
@@ -229,6 +227,8 @@ namespace ngen {
                     // TODO: Log error - Unknown allocation strategy
                     break;
             }
+
+            return nullptr;
         }
 
         //! \brief Searches the available free memory blocks for an appropriate block to be used for the described allocation, chooses the smallest free block available.
