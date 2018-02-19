@@ -10,6 +10,13 @@ namespace {
 
     const char* kHeaderSentinelData = "ALOC";
     const char* kFooterSentinelData = "COLA";
+
+    //! \brief Simple helper function to determine whether or not a value is a power of 2.
+    //! \param value [in] - The number to check if it is a valid power of 2.
+    //! \returns True if the supplied value is a power of 2 otherwise returns false.
+    bool isPow2(size_t value) {
+        return (0 != value && (value & (value -1)) == 0);
+    }
 }
 
 namespace ngen {
@@ -175,24 +182,27 @@ namespace ngen {
             }
 
             // TODO: Validate that alignment is a power of 2.
+            if (isPow2(alignment)) {
+                if (alignment <= MAXIMUM_ALIGNMENT) {
+                    FreeBlock *freeBlock = findFreeBlock(dataLength, alignment);
 
-            if (alignment <= MAXIMUM_ALIGNMENT) {
-                FreeBlock *freeBlock = findFreeBlock(dataLength, alignment);
+                    if (freeBlock) {
+                        Allocation *alloc = consumeMemory(freeBlock, dataLength, alignment);
+                        if (alloc) {
+                            alloc->isArray = isArray;
+                            alloc->fileName = fileName;
+                            alloc->line = line;
 
-                if (freeBlock) {
-                    Allocation *alloc = consumeMemory(freeBlock, dataLength, alignment);
-                    if (alloc) {
-                        alloc->isArray = isArray;
-                        alloc->fileName = fileName;
-                        alloc->line = line;
-
-                        return alloc;
+                            return alloc;
+                        }
                     }
+                } else {
+                    // TODO: Log ERR: Large alignment of {alignment} was requested.
+                    // TODO: We use quite a simple strategy to guarantee the alignment, so large alignments can cause a waste of memory
+                    // TODO: We can account for large alignments in the future.
                 }
             } else {
-                // TODO: Log WARN: Large alignment of {alignment} was requested.
-                // TODO: We use quite a simple strategy to guarantee the alignment, so large alignments can cause a waste of memory
-                // TODO: We can account for large alignments in the future.
+                // TODO: Log ERR: alignment was not a power of 2
             }
 
             return nullptr;
@@ -269,7 +279,7 @@ namespace ngen {
                     const auto endPtr = rawPtr + search->size;
 
                     uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
-                    if (alignedPtr > rawPtr && alignedPtr < endPtr && (endPtr - alignedPtr) >= dataLength) {
+                    if (alignedPtr >= rawPtr && alignedPtr < endPtr && (endPtr - alignedPtr) >= dataLength) {
                         if (!selected || search->size < selected->size) {
                             selected = search;
                         }
