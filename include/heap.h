@@ -16,6 +16,8 @@ namespace ngen {
         struct Allocation {
             size_t      size;
             size_t      line;
+            size_t      blockSize;
+            uintptr_t   allocation;
             bool        isArray;
             const char  *fileName;
             char        sentinel[4];
@@ -51,6 +53,8 @@ namespace ngen {
             kAllocationStrategy getAllocationStrategy() const;
 
         private:
+            Allocation* consumeMemory(FreeBlock *freeBlock, size_t dataLength, size_t alignment);
+
             FreeBlock* findFreeBlock(size_t dataLength, size_t alignment) const;
             FreeBlock* findFreeBlock_first(size_t dataLength, size_t alignment) const;
             FreeBlock* findFreeBlock_smallest(size_t dataLength, size_t alignment) const;

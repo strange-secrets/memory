@@ -7,6 +7,9 @@ namespace {
     const size_t MAXIMUM_ALIGNMENT = 32;
 
     const ngen::memory::kAllocationStrategy DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy_First;
+
+    const char* kHeaderSentinelData = "ALOC";
+    const char* kFooterSentinelData = "COLA";
 }
 
 namespace ngen {
@@ -69,11 +72,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alloc(size_t dataLength) {
             Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, nullptr, 0);
-            if (memory) {
-
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -84,11 +83,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAlloc(size_t dataLength, size_t alignment) {
             Allocation *memory = allocate(dataLength, alignment, false, nullptr, 0);
-            if (memory) {
-
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -101,11 +96,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alloc(size_t dataLength, const char *fileName, size_t line) {
             Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, fileName, line);
-            if (memory) {
-
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -120,11 +111,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAlloc(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
             Allocation *memory = allocate(dataLength, alignment, false, fileName, line);
-            if (memory) {
-
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -133,10 +120,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::allocArray(size_t dataLength) {
             Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, nullptr, 0);
-            if (memory) {
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -147,10 +131,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAllocArray(size_t dataLength, size_t alignment) {
             Allocation *memory = allocate(dataLength, alignment, true, nullptr, 0);
-            if (memory) {
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -163,10 +144,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::allocArray(size_t dataLength, const char *fileName, size_t line) {
             Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, fileName, line);
-            if (memory) {
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief  Allocates a block of memory of a specified length.
@@ -181,10 +159,7 @@ namespace ngen {
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAllocArray(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
             Allocation *memory = allocate(dataLength, alignment, true, fileName, line);
-            if (memory) {
-            }
-
-            return nullptr;
+            return memory ? &memory[1] : nullptr;
         }
 
         //! \brief Attempts to allocate a block of memory with a specified size and alignment.
@@ -195,20 +170,70 @@ namespace ngen {
         //! \param line [in] - The line number within the source file where the allocation was requested.
         //! \returns Pointer to the allocated memory block or nullptr if the allocation could not be made.
         Allocation* Heap::allocate(size_t dataLength, size_t alignment, bool isArray, const char *fileName, size_t line) {
+            if (alignment < DEFAULT_ALIGNMENT) {
+                alignment = DEFAULT_ALIGNMENT;
+            }
+
             // TODO: Validate that alignment is a power of 2.
 
             if (alignment <= MAXIMUM_ALIGNMENT) {
-                FreeBlock *block = findFreeBlock(dataLength, alignment);
+                FreeBlock *freeBlock = findFreeBlock(dataLength, alignment);
 
-                if (block) {
-                    // TODO: Consume memory from block
-                    // TODO: allocation->isArray = isArray
+                if (freeBlock) {
+                    Allocation *alloc = consumeMemory(freeBlock, dataLength, alignment);
+                    if (alloc) {
+                        alloc->isArray = isArray;
+                        alloc->fileName = fileName;
+                        alloc->line = line;
+
+                        return alloc;
+                    }
                 }
             } else {
                 // TODO: Log WARN: Large alignment of {alignment} was requested.
+                // TODO: We use quite a simple strategy to guarantee the alignment, so large alignments can cause a waste of memory
+                // TODO: We can account for large alignments in the future.
             }
 
             return nullptr;
+        }
+
+        //! \brief Consumes an amount of memory from the specified FreeBlock.
+        //! \param freeBlock [in] - The memory block we are to consume.
+        //! \param dataLength [in] - The number of bytes to be consumed.
+        //! \param alignment [in] - The alignment the allocated memory block must have.
+        Allocation* Heap::consumeMemory(FreeBlock *freeBlock, size_t dataLength, size_t alignment) {
+            //NGEN_ASSERT(freeBlock, "Heap.comsumeMemory - freeBlock was null.");
+
+            const auto rawPtr = reinterpret_cast<uintptr_t>(freeBlock);
+            const auto endPtr = rawPtr + freeBlock->size;
+
+            uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
+            uintptr_t headerSize = alignedPtr - rawPtr;
+
+            size_t blockLength = headerSize + dataLength;
+            size_t remaining = endPtr - (alignedPtr + dataLength);
+
+            // If there isn't enough memory remaining to warrant creating a new free block, then
+            // include it inside the allocation.
+            if (remaining <= sizeof(Allocation)) {
+                blockLength += remaining;
+                remaining = 0;
+            }
+
+            auto *alloc = reinterpret_cast<Allocation*>(alignedPtr - sizeof(Allocation));
+
+            alloc->allocation = rawPtr;
+            alloc->blockSize = blockLength;
+            alloc->sentinel[0] = kHeaderSentinelData[0];
+            alloc->sentinel[1] = kHeaderSentinelData[1];
+            alloc->sentinel[2] = kHeaderSentinelData[2];
+            alloc->sentinel[3] = kHeaderSentinelData[3];
+
+            // TODO: Also Need footer sentinel after memory block
+            // TODO: Create a new FreeBlock from the remaining space in the free block
+
+            return alloc;
         }
 
         //! \brief Searches the available free memory blocks for an appropriate block to be used for the described allocation.
@@ -239,15 +264,15 @@ namespace ngen {
             FreeBlock *selected = nullptr;
 
             for (FreeBlock *search = m_rootBlock; search; search = search->nextBlock) {
-                const auto rawPtr = reinterpret_cast<uintptr_t>(search);
-                const uintptr_t alignedPtr = (rawPtr + alignment - 1) / alignment * alignment;
-                const uintptr_t physicalSpace = alignedPtr - rawPtr + dataLength;
+                if (dataLength <= search->size) {
+                    const auto rawPtr = reinterpret_cast<uintptr_t>(search);
+                    const auto endPtr = rawPtr + search->size;
 
-                // TODO: Take into account the allocation header also
-
-                if (search->size >= physicalSpace) {
-                    if (!selected || search->size < selected->size) {
-                        selected = search;
+                    uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
+                    if (alignedPtr > rawPtr && alignedPtr < endPtr && (endPtr - alignedPtr) >= dataLength) {
+                        if (!selected || search->size < selected->size) {
+                            selected = search;
+                        }
                     }
                 }
             }
@@ -261,14 +286,14 @@ namespace ngen {
         //! \returns Pointer to the FreeBlock that can successfully allocate the described memory block.
         FreeBlock* Heap::findFreeBlock_first(size_t dataLength, size_t alignment) const {
             for (FreeBlock *search = m_rootBlock; search; search = search->nextBlock) {
-                const auto rawPtr = reinterpret_cast<uintptr_t>(search);
-                const uintptr_t alignedPtr = (rawPtr + alignment - 1) / alignment * alignment;
-                const uintptr_t physicalSpace = alignedPtr - rawPtr + dataLength;
+                if (dataLength <= search->size) {
+                    const auto rawPtr = reinterpret_cast<uintptr_t>(search);
+                    const auto endPtr = rawPtr + search->size;
 
-                // TODO: Take into account the allocation header also
-
-                if (search->size >= physicalSpace) {
-                    return search;
+                    uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
+                    if (alignedPtr > rawPtr && alignedPtr < endPtr && (endPtr - alignedPtr) >= dataLength) {
+                        return search;
+                    }
                 }
             }
 
