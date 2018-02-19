@@ -193,6 +193,9 @@ namespace ngen {
                             alloc->fileName = fileName;
                             alloc->line = line;
 
+                            m_allocations++;
+                            m_totalAllocations++;
+
                             return alloc;
                         }
                     }
@@ -205,6 +208,7 @@ namespace ngen {
                 // TODO: Log ERR: alignment was not a power of 2
             }
 
+            m_failedAllocations++;
             return nullptr;
         }
 
