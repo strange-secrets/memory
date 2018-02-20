@@ -5,6 +5,17 @@
 const size_t kTestAllocationBufferSize = 1024;
 const size_t kInvalidAllocationBufferSize = 0;
 
+namespace {
+    //! \brief  Helper method that determines whether or not the specified pointer has the specified alignment.
+    //! \param ptr [in] - The pointer whose alignment is to be verified.
+    //! \param alignment [in] - The alignment the pointer is expected to have *must* be a power of two (this is not verified).
+    //! \returns True if the pointer has the specified alignment otherwise false.
+    bool validateAlignment(void *ptr, size_t alignment) {
+        const auto raw = reinterpret_cast<uintptr_t>(ptr);
+        return (0 == (raw & (alignment - 1)));
+    }
+}
+
 TEST(Heap, Construction) {
     ngen::memory::Heap heap;
 

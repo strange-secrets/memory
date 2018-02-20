@@ -1,6 +1,6 @@
 nGen Memory
 ===========
-C++ library for managing memory allocations.
+Cross platform C++ library for managing memory allocations.
 
 nGen is a game library split into separate modules to allow for code to be easily reused or rewritten.
 When writing games in C++ it is extremely important to maintain control over the behaviour of your applications

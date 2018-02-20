@@ -5,7 +5,7 @@
 
 namespace {
     const size_t DEFAULT_ALIGNMENT = 4;
-    const size_t MAXIMUM_ALIGNMENT = 32;
+    const size_t MAXIMUM_ALIGNMENT = 128;
 
     const ngen::memory::kAllocationStrategy DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy_First;
 
