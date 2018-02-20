@@ -14,18 +14,19 @@
 namespace ngen {
     namespace memory {
         struct Allocation {
-            size_t      size;
-            size_t      line;
-            size_t      blockSize;
-            uintptr_t   allocation;
-            bool        isArray;
-            const char  *fileName;
-            char        sentinel[4];
+            size_t      size;           // Size (in bytes) of memory allocation
+            size_t      line;           // Line number that made the allocation (debug only)
+            size_t      blockSize;      // Total size (in bytes) of allocated memory block, including header and footer.
+            uintptr_t   allocation;     // Start address of allocation block
+            bool        isArray;        // True if allocation was made using array operator
+            const char  *fileName;      // Path to file that made the allocation (debug only)
+            char        sentinel[4];    // Bytes that are used to detect buffer over-runs of allocated data.
         };
 
         struct FreeBlock {
-            size_t      size;
-            FreeBlock   *nextBlock;
+            size_t      size;           // Total size of memory block (including the FreeBlock structure itself)
+            FreeBlock   *previous;      // Previous FreeBlock in linked list
+            FreeBlock   *next;          // Next FreeBlock in linked list
         };
 
         class Heap {
@@ -60,6 +61,8 @@ namespace ngen {
             FreeBlock* findFreeBlock_smallest(size_t dataLength, size_t alignment) const;
 
             Allocation* allocate(size_t dataLength, size_t alignment, bool isArray, const char *fileName, size_t line);
+
+            bool gatherMemory(Allocation *alloc);
 
         private:
             FreeBlock*  m_rootBlock;

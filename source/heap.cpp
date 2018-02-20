@@ -14,8 +14,17 @@ namespace {
     //! \brief Simple helper function to determine whether or not a value is a power of 2.
     //! \param value [in] - The number to check if it is a valid power of 2.
     //! \returns True if the supplied value is a power of 2 otherwise returns false.
-    bool isPow2(size_t value) {
+    inline bool isPow2(size_t value) {
         return (0 != value && (value & (value -1)) == 0);
+    }
+
+    //! \brief Given a pointer address, this method returns the next valid address that is aligned with the specified size.
+    //! If the pointer is already aligned, it is returned unchanged.
+    //! \param ptr [in] The pointer address to be aligned.
+    //! \param alignment [in] The desired byte alignment of the pointer.
+    //! \return The pointer address aligned to the specified alignment.
+    template <typename TType> inline TType alignValue(TType value, size_t alignment) {
+        return (value + alignment - 1) / alignment * alignment;
     }
 }
 
@@ -184,11 +193,14 @@ namespace ngen {
             // TODO: Validate that alignment is a power of 2.
             if (isPow2(alignment)) {
                 if (alignment <= MAXIMUM_ALIGNMENT) {
-                    FreeBlock *freeBlock = findFreeBlock(dataLength, alignment);
+                    // NOTE: We align the dataLength value when obtaining a memory block to ensure the
+                    // end of the memory block is at a suitable location for a new FreeBlock instance to exist.
+                    FreeBlock *freeBlock = findFreeBlock(alignValue(dataLength, sizeof(FreeBlock)), alignment);
 
                     if (freeBlock) {
-                        Allocation *alloc = consumeMemory(freeBlock, dataLength, alignment);
+                        Allocation *alloc = consumeMemory(freeBlock, alignValue(dataLength, sizeof(FreeBlock)), alignment);
                         if (alloc) {
+                            alloc->size = dataLength;
                             alloc->isArray = isArray;
                             alloc->fileName = fileName;
                             alloc->line = line;
@@ -212,6 +224,13 @@ namespace ngen {
             return nullptr;
         }
 
+        //! \brief Given a previously allocated memory block, this method attempts to collect the memory back into the available free list.
+        //! \param alloc [in] The Allocation to be reclaimed.
+        //! \returns True if the allocation was successfully reclaimed otherwise false.
+        bool Heap::gatherMemory(Allocation *alloc) {
+            return false;
+        }
+
         //! \brief Consumes an amount of memory from the specified FreeBlock.
         //! \param freeBlock [in] - The memory block we are to consume.
         //! \param dataLength [in] - The number of bytes to be consumed.
@@ -222,7 +241,7 @@ namespace ngen {
             const auto rawPtr = reinterpret_cast<uintptr_t>(freeBlock);
             const auto endPtr = rawPtr + freeBlock->size;
 
-            uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
+            uintptr_t alignedPtr = alignValue(rawPtr + sizeof(Allocation), alignment);
             uintptr_t headerSize = alignedPtr - rawPtr;
 
             size_t blockLength = headerSize + dataLength;
@@ -235,7 +254,24 @@ namespace ngen {
                 remaining = 0;
             }
 
-            auto *alloc = reinterpret_cast<Allocation*>(alignedPtr - sizeof(Allocation));
+            auto alloc = reinterpret_cast<Allocation*>(alignedPtr - sizeof(Allocation));
+
+            // Insert a new FreeBlock into the memory pool, if there is space remaining.
+            if (remaining) {
+                auto remainingBlock = reinterpret_cast<FreeBlock*>(alignedPtr + dataLength);
+
+                remainingBlock->size = remaining;
+                remainingBlock->previous = freeBlock->previous;
+                remainingBlock->next = freeBlock->next;
+
+                if (freeBlock->previous) {
+                    freeBlock->previous->next = remainingBlock;
+                }
+
+                if (freeBlock->next) {
+                    freeBlock->next->previous = remainingBlock;
+                }
+            }
 
             alloc->allocation = rawPtr;
             alloc->blockSize = blockLength;
@@ -244,7 +280,7 @@ namespace ngen {
             alloc->sentinel[2] = kHeaderSentinelData[2];
             alloc->sentinel[3] = kHeaderSentinelData[3];
 
-            // TODO: Also Need footer sentinel after memory block
+            // TODO: Also need footer sentinel after memory block
             // TODO: Create a new FreeBlock from the remaining space in the free block
 
             return alloc;
@@ -277,12 +313,12 @@ namespace ngen {
         FreeBlock* Heap::findFreeBlock_smallest(size_t dataLength, size_t alignment) const {
             FreeBlock *selected = nullptr;
 
-            for (FreeBlock *search = m_rootBlock; search; search = search->nextBlock) {
+            for (FreeBlock *search = m_rootBlock; search; search = search->next) {
                 if (dataLength <= search->size) {
                     const auto rawPtr = reinterpret_cast<uintptr_t>(search);
                     const auto endPtr = rawPtr + search->size;
 
-                    uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
+                    uintptr_t alignedPtr = alignValue(rawPtr + sizeof(Allocation), alignment);
                     if (alignedPtr >= rawPtr && alignedPtr < endPtr && (endPtr - alignedPtr) >= dataLength) {
                         if (!selected || search->size < selected->size) {
                             selected = search;
@@ -299,12 +335,12 @@ namespace ngen {
         //! \param alignment [in] - The alignment (in bytes) the memory allocation requires.
         //! \returns Pointer to the FreeBlock that can successfully allocate the described memory block.
         FreeBlock* Heap::findFreeBlock_first(size_t dataLength, size_t alignment) const {
-            for (FreeBlock *search = m_rootBlock; search; search = search->nextBlock) {
+            for (FreeBlock *search = m_rootBlock; search; search = search->next) {
                 if (dataLength <= search->size) {
                     const auto rawPtr = reinterpret_cast<uintptr_t>(search);
                     const auto endPtr = rawPtr + search->size;
 
-                    uintptr_t alignedPtr = (rawPtr + sizeof(Allocation) + alignment - 1) / alignment * alignment;
+                    uintptr_t alignedPtr = alignValue(rawPtr + sizeof(Allocation), alignment);
                     if (alignedPtr > rawPtr && alignedPtr < endPtr && (endPtr - alignedPtr) >= dataLength) {
                         return search;
                     }
