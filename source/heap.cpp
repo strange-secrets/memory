@@ -1,5 +1,6 @@
 
 #include <cstdint>
+#include <cassert>
 #include "heap.h"
 
 namespace {
@@ -75,6 +76,12 @@ namespace ngen {
             if (allocationStrategy == kAllocationStrategy_Invalid) {
                 return false;
             }
+
+            // TODO: Validate 'memoryBlock' is of a suitable alignment.
+            m_rootBlock = static_cast<FreeBlock*>(memoryBlock);
+            m_rootBlock->size = blockSize;
+            m_rootBlock->next = nullptr;
+            m_rootBlock->previous = nullptr;
 
             m_heapLength = blockSize;
             m_memoryBlock = memoryBlock;
@@ -190,15 +197,16 @@ namespace ngen {
                 alignment = DEFAULT_ALIGNMENT;
             }
 
-            // TODO: Validate that alignment is a power of 2.
             if (isPow2(alignment)) {
                 if (alignment <= MAXIMUM_ALIGNMENT) {
                     // NOTE: We align the dataLength value when obtaining a memory block to ensure the
                     // end of the memory block is at a suitable location for a new FreeBlock instance to exist.
-                    FreeBlock *freeBlock = findFreeBlock(alignValue(dataLength, sizeof(FreeBlock)), alignment);
+                    const auto allocationLength = alignValue(dataLength, sizeof(FreeBlock));
+
+                    FreeBlock *freeBlock = findFreeBlock(allocationLength, alignment);
 
                     if (freeBlock) {
-                        Allocation *alloc = consumeMemory(freeBlock, alignValue(dataLength, sizeof(FreeBlock)), alignment);
+                        Allocation *alloc = consumeMemory(freeBlock, allocationLength, alignment);
                         if (alloc) {
                             alloc->size = dataLength;
                             alloc->isArray = isArray;
@@ -258,18 +266,30 @@ namespace ngen {
 
             // Insert a new FreeBlock into the memory pool, if there is space remaining.
             if (remaining) {
+                assert(remaining >= sizeof(FreeBlock));
+
+                // Create a new FreeBlock from the remaining space
                 auto remainingBlock = reinterpret_cast<FreeBlock*>(alignedPtr + dataLength);
 
                 remainingBlock->size = remaining;
                 remainingBlock->previous = freeBlock->previous;
                 remainingBlock->next = freeBlock->next;
 
+                // TODO: The below code feels a little clunky, maybe refactor in the future
                 if (freeBlock->previous) {
                     freeBlock->previous->next = remainingBlock;
+                } else {
+                    m_rootBlock = remainingBlock;
                 }
 
                 if (freeBlock->next) {
                     freeBlock->next->previous = remainingBlock;
+                }
+            } else {
+                if (freeBlock->previous) {
+                    freeBlock->previous->next = nullptr;
+                } else {
+                    m_rootBlock = nullptr;
                 }
             }
 
@@ -281,7 +301,6 @@ namespace ngen {
             alloc->sentinel[3] = kHeaderSentinelData[3];
 
             // TODO: Also need footer sentinel after memory block
-            // TODO: Create a new FreeBlock from the remaining space in the free block
 
             return alloc;
         }

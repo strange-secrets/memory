@@ -51,6 +51,7 @@ namespace ngen {
 
             size_t getAllocations() const;
             size_t getTotalAllocations() const;
+            size_t getFailedAllocations() const;
             kAllocationStrategy getAllocationStrategy() const;
 
         private:
@@ -86,6 +87,12 @@ namespace ngen {
         //! \returns The number of allocations made by using the heap during the course of its lifetime.
         inline size_t Heap::getTotalAllocations() const {
             return m_totalAllocations;
+        }
+
+        //! \brief Retrieves the number of allocation requests that have been requested but failed.
+        //! \returns The number of allocation requests that have been failed by this heap.
+        inline size_t Heap::getFailedAllocations() const {
+            return m_failedAllocations;
         }
 
         //! \brief Retrieves the allocation strategy being used by this memory heap.
