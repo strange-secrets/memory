@@ -257,3 +257,43 @@ TEST(Heap, DeallocateSingleFlood) {
 
     delete [] allocationBuffer;
 }
+
+TEST(Heap, DeallocateArrayMismatch) {
+    auto *allocationBuffer = new char[kTestAllocationBufferSize];
+
+    ngen::memory::Heap heap;
+
+    EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+
+    EXPECT_EQ(0, heap.getAllocations());
+    EXPECT_EQ(0, heap.getTotalAllocations());
+
+    void *testAllocation = heap.alloc(64);
+
+    EXPECT_NE(nullptr, testAllocation);
+    EXPECT_EQ(1, heap.getAllocations());
+    EXPECT_EQ(1, heap.getTotalAllocations());
+    EXPECT_EQ(0, heap.getFailedAllocations());
+
+    EXPECT_FALSE(heap.deallocate(testAllocation, true, nullptr, 0));
+    EXPECT_EQ(1, heap.getAllocations());
+
+    EXPECT_TRUE(heap.deallocate(testAllocation, false, nullptr, 0));
+    EXPECT_EQ(0, heap.getAllocations());
+
+    // Also test when the data is allocated as an array
+    testAllocation = heap.allocArray(64);
+
+    EXPECT_NE(nullptr, testAllocation);
+    EXPECT_EQ(1, heap.getAllocations());
+    EXPECT_EQ(2, heap.getTotalAllocations());
+    EXPECT_EQ(0, heap.getFailedAllocations());
+
+    EXPECT_FALSE(heap.deallocate(testAllocation, false, nullptr, 0));
+    EXPECT_EQ(1, heap.getAllocations());
+
+    EXPECT_TRUE(heap.deallocate(testAllocation, true, nullptr, 0));
+    EXPECT_EQ(0, heap.getAllocations());
+
+    delete [] allocationBuffer;
+}
