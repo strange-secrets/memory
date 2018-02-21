@@ -17,7 +17,8 @@ namespace ngen {
             size_t      size;           // Size (in bytes) of memory allocation
             size_t      line;           // Line number that made the allocation (debug only)
             size_t      blockSize;      // Total size (in bytes) of allocated memory block, including header and footer.
-            uintptr_t   allocation;     // Start address of allocation block
+            size_t      id;             // Global allocation identifier
+            uintptr_t   addr;           // Start address of allocation block
             bool        isArray;        // True if allocation was made using array operator
             const char  *fileName;      // Path to file that made the allocation (debug only)
             char        sentinel[4];    // Bytes that are used to detect buffer over-runs of allocated data.
@@ -49,13 +50,18 @@ namespace ngen {
             void* allocArray(size_t dataLength, const char *fileName, size_t line);
             void* alignedAllocArray(size_t dataLength, size_t alignment, const char *fileName, size_t line);
 
+            bool deallocate(void *ptr, bool isArray, const char *fileName, size_t line);
+
             size_t getAllocations() const;
             size_t getTotalAllocations() const;
             size_t getFailedAllocations() const;
             kAllocationStrategy getAllocationStrategy() const;
 
         private:
+            FreeBlock* gatherMemory(FreeBlock *block);
             Allocation* consumeMemory(FreeBlock *freeBlock, size_t dataLength, size_t alignment);
+
+            void insertFreeBlock(FreeBlock *block);
 
             FreeBlock* findFreeBlock(size_t dataLength, size_t alignment) const;
             FreeBlock* findFreeBlock_first(size_t dataLength, size_t alignment) const;

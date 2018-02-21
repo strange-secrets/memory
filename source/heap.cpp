@@ -1,9 +1,14 @@
 
 #include <cstdint>
 #include <cassert>
+#include <cstring>
+#include <atomic>
+
 #include "heap.h"
 
 namespace {
+    std::atomic<size_t> allocationId;
+
     const size_t DEFAULT_ALIGNMENT = 4;
     const size_t MAXIMUM_ALIGNMENT = 128;
 
@@ -26,6 +31,13 @@ namespace {
     //! \return The pointer address aligned to the specified alignment.
     template <typename TType> inline TType alignValue(TType value, size_t alignment) {
         return (value + alignment - 1) / alignment * alignment;
+    }
+
+    bool validateSentinel(ngen::memory::Allocation *allocation) {
+        return (   allocation->sentinel[0] == kHeaderSentinelData[0]
+                && allocation->sentinel[1] == kHeaderSentinelData[1]
+                && allocation->sentinel[2] == kHeaderSentinelData[2]
+                && allocation->sentinel[3] == kHeaderSentinelData[3]);
     }
 }
 
@@ -208,6 +220,7 @@ namespace ngen {
                     if (freeBlock) {
                         Allocation *alloc = consumeMemory(freeBlock, allocationLength, alignment);
                         if (alloc) {
+                            alloc->id = allocationId++;
                             alloc->size = dataLength;
                             alloc->isArray = isArray;
                             alloc->fileName = fileName;
@@ -232,11 +245,133 @@ namespace ngen {
             return nullptr;
         }
 
-        //! \brief Given a previously allocated memory block, this method attempts to collect the memory back into the available free list.
-        //! \param alloc [in] The Allocation to be reclaimed.
-        //! \returns True if the allocation was successfully reclaimed otherwise false.
-        bool Heap::gatherMemory(Allocation *alloc) {
-            return false;
+        //! \brief Releases a memory block previously allocated by this object.
+        //! \param ptr [in] - Pointer to the memory block to be released
+        //! \param isArray [in] - True if the deallocation came from an array delete operator otherwise false.
+        //! \param fileName [in] - The path of the source file that made the deallocation, this may be null.
+        //! \param line [in] - The line number within the source file where the deallocation was requested.
+        bool Heap::deallocate(void *ptr, bool isArray, const char *fileName, size_t line) {
+            // We treat an attempt to free a nullptr as always successful.
+            if (ptr) {
+                const auto lowerMemoryBoundary = reinterpret_cast<uintptr_t>(m_memoryBlock);
+                const auto upperMemoryBoundary = lowerMemoryBoundary + m_heapLength;
+
+                const auto start = reinterpret_cast<uintptr_t>(ptr);
+                auto allocation = reinterpret_cast<Allocation*>(start - sizeof(Allocation));
+
+                const auto blockStart = allocation->addr;
+                const auto blockSize = allocation->blockSize;
+                const auto blockEnd = blockStart + blockSize;
+
+                if (blockStart < lowerMemoryBoundary || blockStart > upperMemoryBoundary) {
+                    // TODO: Log ERR allocation outside valid bounds
+                    return false;
+                }
+
+                if (blockEnd < lowerMemoryBoundary || blockEnd > upperMemoryBoundary) {
+                    // TODO: Log ERR allocation span outside valid bounds
+                    return false;
+                }
+
+                if (!validateSentinel(allocation)) {
+                    // TODO: LOG ERR, corrupt memory allocation
+                }
+
+                if (allocation->isArray != isArray) {
+                    // TODO: Log ERR - array mismatch
+                    return false;
+                }
+
+                memset(allocation, 0, sizeof(Allocation));
+
+                auto freeBlock = reinterpret_cast<FreeBlock*>(blockStart);
+                freeBlock->size = blockSize;
+                freeBlock->previous = nullptr;
+                freeBlock->next = nullptr;
+
+                insertFreeBlock(freeBlock);
+
+                auto gatheredBlock = gatherMemory(freeBlock);
+                // TODO: In debug builds clear memory block 'freeBlock' with some suitable value
+
+                m_allocations--;
+            }
+
+            return true;
+        }
+
+        //! \brief Given a FreeBlock instance, this method attempts to insert it into our linked list at the appropriate position.
+        //! \param block [in] - The FreeBlock instance to be inserted into our linked list.
+        void Heap::insertFreeBlock(FreeBlock *block) {
+            assert(nullptr != block);
+            assert(nullptr == block->previous);
+            assert(nullptr == block->next);
+
+            for (auto search = m_rootBlock; search; search = search->next) {
+                if (block < search) {
+                    block->next = search;
+                    block->previous = search->previous;
+
+                    if (search->previous) {
+                        search->previous->next = block;
+                    } else {
+                        m_rootBlock = block;
+                    }
+
+                    search->previous = block;
+                    return;
+                }
+
+                if (!search->next) {
+                    // Special case for the tail of our linked list
+                    block->previous = search;
+                    search->next = block;
+                    return;
+                }
+            }
+
+            // TODO: Error, we should not be able to reach here!
+        }
+
+        //! \brief Given a FreeBlock within our allocator, this method attempts to join it with other consecutive blocks.
+        //! \param block [in] - The FreeBlock we should attempt to join.
+        //! \returns The FreeBlock instance that contains the gathered memory.
+        FreeBlock* Heap::gatherMemory(FreeBlock *block) {
+            assert(nullptr != block);
+
+            const auto blockStart = reinterpret_cast<uintptr_t>(block);
+            const auto blockEnd = blockStart + block->size;
+
+            if (block->next) {
+                const auto nextStart = reinterpret_cast<uintptr_t>(block->next);
+
+                if (blockEnd == nextStart) {
+                    block->size += block->next->size;
+                    block->next = block->next->next;
+
+                    if (block->next) {
+                        block->next->previous = block;
+                    }
+                }
+            }
+
+            if (block->previous) {
+                const auto previousStart = reinterpret_cast<uintptr_t>(block->previous);
+                const auto previousEnd = previousStart + block->previous->size;
+
+                if (previousEnd == blockStart) {
+                    block->previous->size += block->size;
+                    block->previous->next = block->next;
+
+                    if (block->next) {
+                        block->next->previous = block->previous;
+                    }
+
+                    block = block->previous;
+                }
+            }
+
+            return block;
         }
 
         //! \brief Consumes an amount of memory from the specified FreeBlock.
@@ -293,7 +428,7 @@ namespace ngen {
                 }
             }
 
-            alloc->allocation = rawPtr;
+            alloc->addr = rawPtr;
             alloc->blockSize = blockLength;
             alloc->sentinel[0] = kHeaderSentinelData[0];
             alloc->sentinel[1] = kHeaderSentinelData[1];

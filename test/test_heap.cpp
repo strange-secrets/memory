@@ -184,3 +184,76 @@ TEST(Heap, DoubleAllocationWithFailure) {
     delete [] allocationBuffer;
 }
 
+TEST(Heap, DeallocateSingle) {
+    auto *allocationBuffer = new char[kTestAllocationBufferSize];
+
+    ngen::memory::Heap heap;
+
+    EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+
+    EXPECT_EQ(0, heap.getAllocations());
+    EXPECT_EQ(0, heap.getTotalAllocations());
+
+    void *testAllocation = heap.alloc(64);
+
+    EXPECT_NE(nullptr, testAllocation);
+    EXPECT_EQ(1, heap.getAllocations());
+    EXPECT_EQ(1, heap.getTotalAllocations());
+    EXPECT_EQ(0, heap.getFailedAllocations());
+
+    EXPECT_TRUE(heap.deallocate(nullptr, true, nullptr, 0));
+    EXPECT_TRUE(heap.deallocate(nullptr, false, nullptr, 0));
+
+    EXPECT_TRUE(heap.deallocate(testAllocation, false, nullptr, 0));
+    EXPECT_FALSE(heap.deallocate(testAllocation, false, nullptr, 0));
+
+    EXPECT_TRUE(heap.deallocate(nullptr, true, nullptr, 0));
+    EXPECT_TRUE(heap.deallocate(nullptr, false, nullptr, 0));
+
+    EXPECT_EQ(0, heap.getAllocations());
+    EXPECT_EQ(1, heap.getTotalAllocations());
+    EXPECT_EQ(0, heap.getFailedAllocations());
+
+    delete [] allocationBuffer;
+}
+
+//! \brief This test performs a single allocation/release and repeats it multiple times to ensure the heap does not
+//! get irreversibly fragmented.
+TEST(Heap, DeallocateSingleFlood) {
+    auto *allocationBuffer = new char[kTestAllocationBufferSize];
+
+    ngen::memory::Heap heap;
+
+    EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+
+    EXPECT_EQ(0, heap.getTotalAllocations());
+
+    const size_t repeatCount = 1024;
+
+    // Perform the allocation/free multiple times
+    for (size_t loop = 0; loop < repeatCount; ++loop) {
+        EXPECT_EQ(0, heap.getAllocations());
+
+        void *testAllocation = heap.alloc(64);
+
+        EXPECT_NE(nullptr, testAllocation);
+        EXPECT_EQ(1, heap.getAllocations());
+        EXPECT_EQ(0, heap.getFailedAllocations());
+
+        EXPECT_TRUE(heap.deallocate(nullptr, true, nullptr, 0));
+        EXPECT_TRUE(heap.deallocate(nullptr, false, nullptr, 0));
+
+        EXPECT_TRUE(heap.deallocate(testAllocation, false, nullptr, 0));
+        EXPECT_FALSE(heap.deallocate(testAllocation, false, nullptr, 0));
+
+        EXPECT_TRUE(heap.deallocate(nullptr, true, nullptr, 0));
+        EXPECT_TRUE(heap.deallocate(nullptr, false, nullptr, 0));
+
+        EXPECT_EQ(0, heap.getAllocations());
+        EXPECT_EQ(0, heap.getFailedAllocations());
+    }
+
+    EXPECT_EQ(repeatCount, heap.getTotalAllocations());
+
+    delete [] allocationBuffer;
+}
