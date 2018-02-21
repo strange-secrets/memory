@@ -330,7 +330,7 @@ namespace ngen {
                 }
             }
 
-            // TODO: Error, we should not be able to reach here!
+            m_rootBlock = block;
         }
 
         //! \brief Given a FreeBlock within our allocator, this method attempts to join it with other consecutive blocks.
