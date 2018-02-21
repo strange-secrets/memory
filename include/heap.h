@@ -52,6 +52,8 @@ namespace ngen {
 
             bool deallocate(void *ptr, bool isArray, const char *fileName, size_t line);
 
+            size_t getSize() const;
+
             size_t getAllocations() const;
             size_t getTotalAllocations() const;
             size_t getFailedAllocations() const;
@@ -69,8 +71,6 @@ namespace ngen {
 
             Allocation* allocate(size_t dataLength, size_t alignment, bool isArray, const char *fileName, size_t line);
 
-            bool gatherMemory(Allocation *alloc);
-
         private:
             FreeBlock*  m_rootBlock;
             void*       m_memoryBlock;
@@ -82,6 +82,12 @@ namespace ngen {
             size_t      m_totalAllocations;
             size_t      m_failedAllocations;
         };
+
+        //! \brief Retrieves the total size of the memory heap.
+        //! \returns The size (in bytes) of the total memory pool managed by this Heap object.
+        inline size_t Heap::getSize() const {
+            return m_heapLength;
+        }
 
         //! \brief Retrieves the number of allocations that are currently live within the heap.
         //! \returns The number of allocations currently still live within the heap.

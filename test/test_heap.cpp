@@ -68,6 +68,7 @@ TEST(Heap, Initialize_First) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize, ngen::memory::kAllocationStrategy_First));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -82,6 +83,7 @@ TEST(Heap, Initialize_Smallest) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize, ngen::memory::kAllocationStrategy_Smallest));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -96,6 +98,7 @@ TEST(Heap, SingleAllocation) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -116,6 +119,7 @@ TEST(Heap, DoubleAllocation) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -141,6 +145,7 @@ TEST(Heap, AllocationTooLarge) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -161,6 +166,7 @@ TEST(Heap, DoubleAllocationWithFailure) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -190,6 +196,7 @@ TEST(Heap, DeallocateSingle) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -225,6 +232,7 @@ TEST(Heap, DeallocateSingleFlood) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getTotalAllocations());
 
@@ -264,6 +272,7 @@ TEST(Heap, DeallocateArrayMismatch) {
     ngen::memory::Heap heap;
 
     EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
 
     EXPECT_EQ(0, heap.getAllocations());
     EXPECT_EQ(0, heap.getTotalAllocations());
@@ -294,6 +303,49 @@ TEST(Heap, DeallocateArrayMismatch) {
 
     EXPECT_TRUE(heap.deallocate(testAllocation, true, nullptr, 0));
     EXPECT_EQ(0, heap.getAllocations());
+
+    delete [] allocationBuffer;
+}
+
+//! \brief Test behaviour when entire buffer has been allocated.
+TEST(Heap, FullAllocation) {
+    auto *allocationBuffer = new char[kTestAllocationBufferSize];
+
+    ngen::memory::Heap heap;
+
+    EXPECT_TRUE(heap.initialize(allocationBuffer, kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heap.getSize());
+
+    EXPECT_EQ(0, heap.getAllocations());
+    EXPECT_EQ(0, heap.getTotalAllocations());
+
+    void *testAllocation = heap.alloc(kTestAllocationBufferSize - sizeof(ngen::memory::Allocation));
+
+    EXPECT_NE(nullptr, testAllocation);
+    EXPECT_EQ(1, heap.getAllocations());
+    EXPECT_EQ(1, heap.getTotalAllocations());
+    EXPECT_EQ(0, heap.getFailedAllocations());
+
+    void *testAllocationB = heap.alloc(64);
+
+    EXPECT_EQ(nullptr, testAllocationB);
+    EXPECT_EQ(1, heap.getAllocations());
+    EXPECT_EQ(1, heap.getTotalAllocations());
+    EXPECT_EQ(1, heap.getFailedAllocations());
+
+    EXPECT_TRUE(heap.deallocate(testAllocation, false, nullptr, 0));
+
+    EXPECT_EQ(0, heap.getAllocations());
+    EXPECT_EQ(1, heap.getTotalAllocations());
+    EXPECT_EQ(1, heap.getFailedAllocations());
+
+    testAllocation = heap.alloc(64);
+    EXPECT_NE(nullptr, testAllocation);
+    EXPECT_EQ(1, heap.getAllocations());
+    EXPECT_EQ(2, heap.getTotalAllocations());
+    EXPECT_EQ(1, heap.getFailedAllocations());
+
+    EXPECT_TRUE(heap.deallocate(testAllocation, false, nullptr, 0));
 
     delete [] allocationBuffer;
 }
