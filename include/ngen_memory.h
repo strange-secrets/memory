@@ -63,7 +63,7 @@ inline void operator delete(void *ptr, ngen::memory::Heap *heap, const char *fil
 }
 
 inline void operator delete[](void *ptr, ngen::memory::Heap *heap) {
-    heap->deallocate(ptr, true, nullptr, 0)''
+    heap->deallocate(ptr, true, nullptr, 0);
 }
 
 inline void operator delete[](void *ptr, ngen::memory::Heap *heap, const char *fileName, size_t line) {
