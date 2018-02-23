@@ -286,6 +286,56 @@ TEST(Heap, DeallocateArrayMismatch) {
     EXPECT_EQ(0, heap.getAllocations());
 }
 
+TEST(Heap, DeallocateHeapMismatch) {
+    std::unique_ptr<char[]> allocationBufferA(new char[kTestAllocationBufferSize]);
+    std::unique_ptr<char[]> allocationBufferB(new char[kTestAllocationBufferSize]);
+
+    ngen::memory::Heap heapA;
+    ngen::memory::Heap heapB;
+
+    EXPECT_TRUE(heapA.initialize(allocationBufferA.get(), kTestAllocationBufferSize));
+    EXPECT_TRUE(heapB.initialize(allocationBufferB.get(), kTestAllocationBufferSize));
+    EXPECT_EQ(kTestAllocationBufferSize, heapA.getSize());
+    EXPECT_EQ(kTestAllocationBufferSize, heapB.getSize());
+
+    EXPECT_EQ(0, heapA.getAllocations());
+    EXPECT_EQ(0, heapA.getTotalAllocations());
+
+    EXPECT_EQ(0, heapB.getAllocations());
+    EXPECT_EQ(0, heapB.getTotalAllocations());
+
+    void *testAllocationA = heapA.alloc(64);
+    void *testAllocationB = heapB.alloc(64);
+
+    EXPECT_NE(nullptr, testAllocationA);
+    EXPECT_NE(nullptr, testAllocationB);
+
+    EXPECT_EQ(1, heapA.getAllocations());
+    EXPECT_EQ(1, heapA.getTotalAllocations());
+    EXPECT_EQ(0, heapA.getFailedAllocations());
+
+    EXPECT_EQ(1, heapB.getAllocations());
+    EXPECT_EQ(1, heapB.getTotalAllocations());
+    EXPECT_EQ(0, heapB.getFailedAllocations());
+
+    EXPECT_FALSE(heapA.deallocate(testAllocationB, false, nullptr, 0));
+    EXPECT_FALSE(heapB.deallocate(testAllocationA, false, nullptr, 0));
+
+    EXPECT_FALSE(heapA.deallocate(testAllocationB, true, nullptr, 0));
+    EXPECT_FALSE(heapB.deallocate(testAllocationA, true, nullptr, 0));
+
+    EXPECT_TRUE(heapA.deallocate(testAllocationA, false, nullptr, 0));
+    EXPECT_TRUE(heapB.deallocate(testAllocationB, false, nullptr, 0));
+
+    EXPECT_EQ(0, heapA.getAllocations());
+    EXPECT_EQ(1, heapA.getTotalAllocations());
+    EXPECT_EQ(0, heapA.getFailedAllocations());
+
+    EXPECT_EQ(0, heapB.getAllocations());
+    EXPECT_EQ(1, heapB.getTotalAllocations());
+    EXPECT_EQ(0, heapB.getFailedAllocations());
+}
+
 //! \brief Test behaviour when entire buffer has been allocated.
 TEST(Heap, FullAllocation) {
     std::unique_ptr<char[]> allocationBuffer(new char[kTestAllocationBufferSize]);
