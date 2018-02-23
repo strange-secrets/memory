@@ -213,7 +213,7 @@ namespace ngen {
                 if (alignment <= MAXIMUM_ALIGNMENT) {
                     // NOTE: We align the dataLength value when obtaining a memory block to ensure the
                     // end of the memory block is at a suitable location for a new FreeBlock instance to exist.
-                    const auto allocationLength = alignValue(dataLength, sizeof(FreeBlock));
+                    const auto allocationLength = alignValue(dataLength, alignof(FreeBlock));
 
                     FreeBlock *freeBlock = findFreeBlock(allocationLength, alignment);
 
@@ -259,6 +259,11 @@ namespace ngen {
                 const auto start = reinterpret_cast<uintptr_t>(ptr);
                 auto allocation = reinterpret_cast<Allocation*>(start - sizeof(Allocation));
 
+                if (allocation->heap != this) {
+                    // TODO: Log ERR allocation did not belong to this heap
+                    return false;
+                }
+
                 const auto blockStart = allocation->addr;
                 const auto blockSize = allocation->blockSize;
                 const auto blockEnd = blockStart + blockSize;
@@ -273,16 +278,16 @@ namespace ngen {
                     return false;
                 }
 
-                if (!validateSentinel(allocation)) {
-                    // TODO: LOG ERR, corrupt memory allocation
-                }
-
                 if (allocation->isArray != isArray) {
                     // TODO: Log ERR - array mismatch
                     return false;
                 }
 
-                memset(allocation, 0, sizeof(Allocation));
+                if (!validateSentinel(allocation)) {
+                    // TODO: LOG ERR, corrupt memory allocation
+                }
+
+                allocation->heap = nullptr;
 
                 auto freeBlock = reinterpret_cast<FreeBlock*>(blockStart);
                 freeBlock->size = blockSize;
@@ -428,6 +433,7 @@ namespace ngen {
                 }
             }
 
+            alloc->heap = this;
             alloc->addr = rawPtr;
             alloc->blockSize = blockLength;
             alloc->sentinel[0] = kHeaderSentinelData[0];

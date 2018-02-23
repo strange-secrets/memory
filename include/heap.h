@@ -14,7 +14,10 @@
 
 namespace ngen {
     namespace memory {
+        class Heap;
+
         struct Allocation {
+            Heap        *heap;          // The heap from which we were allocated
             size_t      size;           // Size (in bytes) of memory allocation
             size_t      line;           // Line number that made the allocation (debug only)
             size_t      blockSize;      // Total size (in bytes) of allocated memory block, including header and footer.
