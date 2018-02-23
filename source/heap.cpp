@@ -12,7 +12,7 @@ namespace {
     const size_t DEFAULT_ALIGNMENT = 4;
     const size_t MAXIMUM_ALIGNMENT = 128;
 
-    const ngen::memory::kAllocationStrategy DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy_First;
+    const ngen::memory::kAllocationStrategy DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy::First;
 
     const char* kHeaderSentinelData = "ALOC";
     const char* kFooterSentinelData = "COLA";
@@ -46,7 +46,7 @@ namespace ngen {
         Heap::Heap()
         : m_rootBlock(nullptr)
         , m_memoryBlock(nullptr)
-        , m_allocationStrategy(kAllocationStrategy_Invalid)
+        , m_allocationStrategy(kAllocationStrategy::Invalid)
         , m_heapLength(0)
         , m_allocations(0)
         , m_totalAllocations(0)
@@ -85,7 +85,7 @@ namespace ngen {
                 return false;
             }
 
-            if (allocationStrategy == kAllocationStrategy_Invalid) {
+            if (allocationStrategy == kAllocationStrategy::Invalid) {
                 return false;
             }
 
@@ -446,10 +446,10 @@ namespace ngen {
         //! \returns Pointer to the FreeBlock that can successfully allocate the described memory block.
         FreeBlock* Heap::findFreeBlock(size_t dataLength, size_t alignment) const {
             switch (m_allocationStrategy) {
-                case kAllocationStrategy_First:
+                case kAllocationStrategy::First:
                     return findFreeBlock_first(dataLength, alignment);
 
-                case kAllocationStrategy_Smallest:
+                case kAllocationStrategy::Smallest:
                     return findFreeBlock_smallest(dataLength, alignment);
 
                 default:

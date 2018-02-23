@@ -6,10 +6,10 @@
 
 namespace ngen {
     namespace memory {
-        enum kAllocationStrategy {
-            kAllocationStrategy_Invalid,
-            kAllocationStrategy_First,
-            kAllocationStrategy_Smallest
+        enum class kAllocationStrategy {
+            Invalid,
+            First,
+            Smallest
         };
     }
 }
