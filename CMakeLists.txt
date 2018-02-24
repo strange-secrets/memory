@@ -5,23 +5,46 @@ set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_ARCHITECTURES x86_64)
 
+#set(CMAKE_CXX_CLANG_TIDY "clang-tidy;checks=-*,readability-*")
+
 add_subdirectory(external)
 
 option(NGEN_BUILD_TESTS "Build unit tests." ON)
 
-project(ngen_memory)
-
-include_directories(include)
+project(memory)
 
 set(SOURCE_FILES
-        source/heap.cpp)
+    source/heap.cpp
+)
 
 set(INCLUDE_FILES
-        include/heap.h
-        include/allocation_strategy.h
-        include/ngen_memory.h)
+    include/heap.h
+    include/allocation_strategy.h
+    include/ngen_memory.h
+)
 
-add_library(ngen_memory ${SOURCE_FILES} ${INCLUDE_FILES})
+add_library(memory STATIC
+    ${SOURCE_FILES}
+    ${INCLUDE_FILES}
+)
+
+target_include_directories(memory PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/ngen/memory>
+)
+
+install(TARGETS memory EXPORT memory_targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+install(EXPORT memory_targets
+    FILE memory_targets.cmake
+    NAMESPACE ngen::
+    DESTINATION lib/cmake/ngen
+)
 
 if (NGEN_BUILD_TESTS)
     add_subdirectory(test)
