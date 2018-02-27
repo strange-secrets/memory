@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_EXTENSIONS ON)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_OSX_ARCHITECTURES x86_64)
+enable_testing()
 
-#set(CMAKE_CXX_CLANG_TIDY "clang-tidy;checks=-*,readability-*")
+#set(CMAKE_CXX_STANDARD 14)
+#set(CMAKE_CXX_EXTENSIONS ON)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_OSX_ARCHITECTURES x86_64)
 
 add_subdirectory(external)
 
@@ -26,6 +26,14 @@ set(INCLUDE_FILES
 add_library(memory STATIC
     ${SOURCE_FILES}
     ${INCLUDE_FILES}
+)
+add_library(ngen::memory ALIAS memory)
+
+target_compile_features(memory
+    PUBLIC
+        cxx_strong_enums
+    PRIVATE
+        cxx_auto_type
 )
 
 target_include_directories(memory PUBLIC

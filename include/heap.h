@@ -39,6 +39,9 @@ namespace ngen {
             Heap();
             ~Heap();
 
+            Heap(const Heap &other) = delete;
+            Heap& operator=(const Heap &other) = delete;
+
             bool initialize(void *memoryBlock, size_t blockSize);
             bool initialize(void *memoryBlock, size_t blockSize, kAllocationStrategy allocationStrategy);
 
