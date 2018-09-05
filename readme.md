@@ -9,6 +9,12 @@ memory. Failure to do so can lead to fragmentation and bugs that are extremely d
 To begin with this library provides fairly simple memory management but can be extended over time to
 add more complex behaviour.
 
+When creating a video game, it is essential to maintain control of memory and its behaviour. Even on a platform with
+virtual memory we should keep a tight reign on how much memory we are allocating. Simply relying on the standard
+allocator can allow memory usage to spiral out of control, or fragmentation of the memory space.
+
+ngen::Memory is intended to provide a pooled memory allocation set to help contain memory and detect issues with
+our memory usage. 
 
 Allocation
 ==========

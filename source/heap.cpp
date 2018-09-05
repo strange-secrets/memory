@@ -12,7 +12,7 @@ namespace {
     const size_t DEFAULT_ALIGNMENT = 4;
     const size_t MAXIMUM_ALIGNMENT = 128;
 
-    const ngen::memory::kAllocationStrategy DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy::First;
+    const auto DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy::First;
 
     const char* kHeaderSentinelData = "ALOC";
     const char* kFooterSentinelData = "COLA";
@@ -106,7 +106,7 @@ namespace ngen {
         //!         Length (in bytes) of the memory block to be allocated.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alloc(size_t dataLength) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, nullptr, 0);
+            auto memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, nullptr, 0);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -117,7 +117,7 @@ namespace ngen {
         //!         Specifies the alignment of the allocated memory block. Must be a power of two.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAlloc(size_t dataLength, size_t alignment) {
-            Allocation *memory = allocate(dataLength, alignment, false, nullptr, 0);
+            auto memory = allocate(dataLength, alignment, false, nullptr, 0);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -130,7 +130,7 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alloc(size_t dataLength, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, fileName, line);
+            auto memory = allocate(dataLength, DEFAULT_ALIGNMENT, false, fileName, line);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -145,7 +145,7 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAlloc(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, alignment, false, fileName, line);
+            auto memory = allocate(dataLength, alignment, false, fileName, line);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -154,7 +154,7 @@ namespace ngen {
         //!         Length (in bytes) of the memory block to be allocated.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::allocArray(size_t dataLength) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, nullptr, 0);
+            auto memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, nullptr, 0);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -165,7 +165,7 @@ namespace ngen {
         //!         Specifies the alignment of the allocated memory block. Must be a power of two.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAllocArray(size_t dataLength, size_t alignment) {
-            Allocation *memory = allocate(dataLength, alignment, true, nullptr, 0);
+            auto memory = allocate(dataLength, alignment, true, nullptr, 0);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -178,7 +178,7 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::allocArray(size_t dataLength, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, fileName, line);
+            auto memory = allocate(dataLength, DEFAULT_ALIGNMENT, true, fileName, line);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -193,7 +193,7 @@ namespace ngen {
         //!         The line number within the source file where the allocation took place.
         //! \return Pointer to a memory block at least of the specified length or null if it could not be allocated.
         void* Heap::alignedAllocArray(size_t dataLength, size_t alignment, const char *fileName, size_t line) {
-            Allocation *memory = allocate(dataLength, alignment, true, fileName, line);
+            auto memory = allocate(dataLength, alignment, true, fileName, line);
             return memory ? &memory[1] : nullptr;
         }
 
@@ -215,10 +215,10 @@ namespace ngen {
                     // end of the memory block is at a suitable location for a new FreeBlock instance to exist.
                     const auto allocationLength = alignValue(dataLength, alignof(FreeBlock));
 
-                    FreeBlock *freeBlock = findFreeBlock(allocationLength, alignment);
+                    auto freeBlock = findFreeBlock(allocationLength, alignment);
 
                     if (freeBlock) {
-                        Allocation *alloc = consumeMemory(freeBlock, allocationLength, alignment);
+                        auto alloc = consumeMemory(freeBlock, allocationLength, alignment);
                         if (alloc) {
                             alloc->id = allocationId++;
                             alloc->size = dataLength;

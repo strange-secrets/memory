@@ -13,6 +13,8 @@ option(NGEN_BUILD_TESTS "Build unit tests." ON)
 
 project(memory)
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
+
 set(SOURCE_FILES
     source/heap.cpp
 )
