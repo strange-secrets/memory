@@ -12,7 +12,7 @@ steps:
 - task: CMake@1
   inputs:
     workingDirectory: 'build' # Optional
-    cmakeargs: .
+    cmakeargs: ..
 - script: ls -al ./build
   displayName: 'List directory'
 - script: make ./build
