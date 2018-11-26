@@ -12,5 +12,6 @@ steps:
 - task: CMake@1
   inputs:
     workingDirectory: 'build' # Optional
+- script: ls -al
 - script: make ./build
 - script: ./build/test/memory_test.exe
