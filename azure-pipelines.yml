@@ -12,6 +12,9 @@ steps:
 - task: CMake@1
   inputs:
     workingDirectory: 'build' # Optional
-- script: ls -al
+- script: ls -al ./build
+  displayName: 'List directory'
 - script: make ./build
+  displayName: 'make'
 - script: ./build/test/memory_test.exe
+  displayName: 'Running tests'
