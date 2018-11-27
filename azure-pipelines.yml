@@ -13,7 +13,7 @@ steps:
   inputs:
     workingDirectory: 'build' # Optional
     cmakeargs: -DCMAKE_BUILD_TYPE=Debug ..
-- script: make ./Makefile
+- script: 'make'
   displayName: 'make'
   workingDirectory: 'build'
 - script: ls -al
