@@ -27,3 +27,4 @@ steps:
     testResultsFormat: 'xUnit'
     testResultsFiles: '**/TEST-*.xml'
     mergeTestResults: false
+    workingDirectory: 'build'
