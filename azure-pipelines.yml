@@ -21,6 +21,7 @@ steps:
   workingDirectory: 'build/test'
 - script: ls -al ./build/test
   displayName: 'List test directory'
+- script: cat ./build/test/TEST-memory.xml
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'xUnit'
