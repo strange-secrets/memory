@@ -13,8 +13,9 @@ steps:
   inputs:
     workingDirectory: 'build' # Optional
     cmakeargs: -DCMAKE_BUILD_TYPE=Debug ..
-- script: make ./build/Makefile
+- script: make ./Makefile
   displayName: 'make'
+  workingDirectory: 'build'
 - script: ls -al
   displayName: 'List root directory'
 - script: ls -al ./build
