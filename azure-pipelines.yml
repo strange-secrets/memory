@@ -13,13 +13,13 @@ steps:
   inputs:
     workingDirectory: 'build' # Optional
     cmakeargs: ..
+- script: make ./build/test
+  displayName: 'make'
+- script: ./build/test/memory_test.exe
+  displayName: 'Running tests'
 - script: ls -al
   displayName: 'List root directory'
 - script: ls -al ./build
   displayName: 'List build directory'
 - script: ls -al ./build/test
   displayName: 'List test directory'
-- script: make .
-  displayName: 'make'
-- script: ./build/test/memory_test.exe
-  displayName: 'Running tests'
