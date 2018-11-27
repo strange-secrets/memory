@@ -19,7 +19,7 @@ steps:
 - script: ./memory_test --gtest_output=xml:TEST-memory.xml
   displayName: 'Running tests'
   workingDirectory: 'build/test'
-- task: PublishTestResult@2
+- task: PublishTestResults@2
   inputs:
     testResultsFormat: 'xUnit'
     testResultsFiles: '**/TEST-*.xml'
