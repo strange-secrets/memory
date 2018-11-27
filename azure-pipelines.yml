@@ -17,11 +17,8 @@ steps:
   displayName: 'make'
   workingDirectory: 'build'
 - script: ./memory_test --gtest_output=xml:TEST-memory.xml
-  displayName: 'Running tests'
+  displayName: 'Unit tests'
   workingDirectory: 'build/test'
-- script: ls -al ./build/test
-  displayName: 'List test directory'
-- script: cat ./build/test/TEST-memory.xml
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'JUnit'
