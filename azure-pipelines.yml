@@ -22,5 +22,6 @@ steps:
   displayName: 'List build directory'
 - script: ls -al ./build/test
   displayName: 'List test directory'
-- script: ./build/test/memory_test.exe
+- script: ./memory_test
   displayName: 'Running tests'
+  workingDirectory: 'build/test'
