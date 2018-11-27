@@ -19,6 +19,8 @@ steps:
 - script: ./memory_test --gtest_output=xml:TEST-memory.xml
   displayName: 'Running tests'
   workingDirectory: 'build/test'
+- script: ls -al ./build/test
+  displayName: 'List test directory'
 - task: PublishTestResults@2
   inputs:
     testResultsFormat: 'xUnit'
