@@ -23,6 +23,5 @@ wish the allocation to obtain memory from.
 Using macro's in this way provides a number of benefits over directly overriding operator new.
 
 1) Other libraries may override operator new, using the macro helps avoid conflicts.
-2) The macro can be changed to easily change the allocation behaviour across the entire codebase.
+2) The macro can be redefined to easily alter the allocation behaviour across the entire codebase.
 3) The macro has debug and non-debug definitions to allow for file and line numbers to be logged automatically.
-
