@@ -9,8 +9,8 @@
 namespace {
     std::atomic<size_t> allocationId;
 
-    const size_t DEFAULT_ALIGNMENT = 4;
-    const size_t MAXIMUM_ALIGNMENT = 128;
+    constexpr size_t DEFAULT_ALIGNMENT = 4;
+    constexpr size_t MAXIMUM_ALIGNMENT = 128;
 
     const auto DEFAULT_ALLOCATION_STRATEGY = ngen::memory::kAllocationStrategy::First;
 
@@ -373,7 +373,7 @@ namespace ngen::memory {
     //! \param dataLength [in] - The number of bytes to be consumed.
     //! \param alignment [in] - The alignment the allocated memory block must have.
     Allocation *Heap::consumeMemory(FreeBlock *freeBlock, size_t dataLength, size_t alignment) {
-        //NGEN_ASSERT(freeBlock, "Heap.comsumeMemory - freeBlock was null.");
+        assert(nullptr != freeBlock);
 
         const auto rawPtr = reinterpret_cast<uintptr_t>(freeBlock);
         const auto endPtr = rawPtr + freeBlock->size;
