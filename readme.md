@@ -2,19 +2,19 @@ nGen Memory
 ===========
 Cross platform C++ library for managing memory allocations.
 
-nGen is a game library split into separate modules to allow for code to be easily reused or rewritten.
 When writing games in C++ it is extremely important to maintain control over the behaviour of your applications
 memory. Failure to do so can lead to fragmentation and bugs that are extremely difficult to track down.
 
-To begin with this library provides fairly simple memory management but can be extended over time to
+To begin with, this library provides fairly simple memory management but can be extended over time to
 add more complex behaviour.
 
 When creating a video game, it is essential to maintain control of memory and its behaviour. Even on a platform with
 virtual memory we should keep a tight reign on how much memory we are allocating. Simply relying on the standard
-allocator can allow memory usage to spiral out of control, or fragmentation of the memory space.
+allocator can allow memory usage to spiral out of control, or fragmentation of the memory space resulting performance
+issues that are difficult to identify.
 
-ngen::Memory is intended to provide a pooled memory allocation set to help contain memory and detect issues with
-our memory usage. 
+nGen is the name of Strange Secrets library of game related modules, these modules are structured to be as independent
+as possible to allow for reuse across multiple projects.
 
 Allocation
 ==========

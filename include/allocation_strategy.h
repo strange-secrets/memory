@@ -1,19 +1,17 @@
 
-#if !defined(NGEN_ALLOCATION_STRATEGY_HEADER_INCLUDED_NFACTORIAL)
-#define NGEN_ALLOCATION_STRATEGY_HEADER_INCLUDED_NFACTORIAL
+#if !defined(ALLOCATION_STRATEGY_HEADER_INCLUDED_STRANGE_SECRETS)
+#define ALLOCATION_STRATEGY_HEADER_INCLUDED_STRANGE_SECRETS
 
 ////////////////////////////////////////////////////////////////////////////
 
-namespace ngen {
-    namespace memory {
-        enum class kAllocationStrategy {
-            Invalid,
-            First,
-            Smallest
-        };
-    }
+namespace ngen::memory {
+    enum class kAllocationStrategy {
+        Invalid,
+        First,
+        Smallest
+    };
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-#endif //!defined(NGEN_ALLOCATION_STRATEGY_HEADER_INCLUDED_NFACTORIAL)
+#endif //!defined(ALLOCATION_STRATEGY_HEADER_INCLUDED_STRANGE_SECRETS)

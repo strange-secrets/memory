@@ -1,6 +1,6 @@
 
-#if !defined(NGEN_MEMORY_HEADER_INCLUDED_NFACTORIAL)
-#define NGEN_MEMORY_HEADER_INCLUDED_NFACTORIAL
+#if !defined(MEMORY_HEADER_INCLUDED_STRANGE_SECRETS)
+#define MEMORY_HEADER_INCLUDED_STRANGE_SECRETS
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -73,4 +73,4 @@ inline void operator delete[](void *ptr, ngen::memory::Heap *heap, const char *f
 
 ////////////////////////////////////////////////////////////////////////////
 
-#endif //!defined(NGEN_MEMORY_HEADER_INCLUDED_NFACTORIAL)
+#endif //!defined(MEMORY_HEADER_INCLUDED_STRANGE_SECRETS)
